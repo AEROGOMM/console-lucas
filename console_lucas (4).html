@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Console Lucas — AEROGOMM</title>
+<meta name="theme-color" content="#2f6fed">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
+    --accent:#2f6fed; --green:#1aa06d; --orange:#e08a1e; --red:#d94f4f; --pink:#c14f8f;
+    --border:#e5e7eb;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  header{background:var(--ink);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  header h1{font-size:17px;margin:0;font-weight:600;}
+  header .sub{font-size:11.5px;color:#a7adc0;margin-top:2px;}
+  header .actions{display:flex;gap:8px;align-items:center;}
+  main{padding:14px;max-width:640px;margin:0 auto;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .card-title{font-size:14.5px;font-weight:700;margin:0 0 12px 0;display:flex;align-items:center;gap:8px;}
+  label{font-size:11.5px;color:var(--muted);display:block;margin:10px 0 4px;text-transform:uppercase;letter-spacing:.3px;}
+  input,select,textarea{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);font-family:inherit;}
+  textarea{min-height:70px;resize:vertical;}
+  textarea.expanded{min-height:40vh;}
+  .notes-tools{display:flex;gap:6px;justify-content:flex-end;margin-bottom:4px;}
+  .notes-tools button{font-size:10.5px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media(max-width:520px){.row2{grid-template-columns:1fr;}}
+  .btn{padding:11px 18px;font-size:13.5px;font-weight:700;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--ink);}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn-red{background:var(--red);color:#fff;border-color:var(--red);}
+  .btn-block{width:100%;margin-top:12px;}
+  .btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);}
+  .icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;cursor:pointer;}
+  .msg{font-size:12.5px;margin-top:8px;}
+  .msg.ok{color:var(--green);} .msg.err{color:var(--red);}
+  .feed-item{border-left:3px solid var(--accent);background:#f2f6ff;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:13px;}
+  .feed-item .feed-time{color:var(--muted);font-size:11px;}
+  .empty{color:var(--muted);font-size:13px;}
+  .combo{position:relative;}
+  .combo-list{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:200px;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:8px;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.12);}
+  .combo-list.open{display:block;}
+  .combo-item{padding:9px 12px;font-size:13.5px;cursor:pointer;}
+  .combo-item:hover{background:#f2f4f7;}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,22,30,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:16px;}
+  .overlay.open{display:flex;}
+  .box{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:360px;}
+  .box h2{font-size:16px;margin:0 0 14px;}
+  .box .error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+  .link-btn{background:none;border:none;color:var(--muted);font-size:11.5px;text-decoration:underline;cursor:pointer;margin-top:14px;padding:0;display:block;}
+  .settings-box{max-width:440px;max-height:85vh;overflow-y:auto;}
+  .settings-box h3{font-size:13px;margin:16px 0 4px;color:var(--accent);}
+  .settings-box .hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4;}
+
+  .quicklinks{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:150;}
+  .quicklinks a{width:5cm;text-align:center;font-size:12.5px;font-weight:700;padding:10px 6px;border-radius:8px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  .ql-pay{background:#1f2430;color:#fff;}
+  .ql-aero{background:var(--orange);color:#fff;}
+  .ql-com{background:var(--accent);color:#fff;}
+  @media(max-width:600px){.quicklinks{position:static;flex-direction:row;flex-wrap:wrap;justify-content:center;padding:10px 14px 0;} .quicklinks a{width:auto;flex:1;min-width:110px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>👋 Console Lucas</h1>
+    <div class="sub" id="dateLabel"></div>
+  </div>
+  <div class="actions">
+    <button class="icon-btn" id="btnSettings" title="Configuration">⚙</button>
+    <button class="btn btn-ghost" id="btnLogout" style="display:none;">Déconnexion</button>
+  </div>
+</header>
+
+<div class="quicklinks">
+  <a class="ql-pay" href="https://paiement.systempay.fr/vads-merchant/" target="_blank" rel="noopener">💳 SYSTEM PAY</a>
+  <a class="ql-aero" href="https://aerogomm.github.io/crm-prospection/leads_aerogommage.html" target="_blank" rel="noopener">🟧 Leads Aérogommage</a>
+  <a class="ql-com" href="https://aerogomm.github.io/crmcommerciaux/leads_commerciaux.html" target="_blank" rel="noopener">🟦 CRM Commerciaux</a>
+</div>
+
+<!-- ===== ECRAN DE CONNEXION ===== -->
+<div class="overlay" id="loginOverlay">
+  <div class="box">
+    <h2>🔒 Connexion</h2>
+    <label>Code d'accès</label>
+    <input type="password" id="loginCode" inputmode="numeric" autocomplete="off" placeholder="••••">
+    <div class="error" id="loginError">Code incorrect.</div>
+    <button class="btn btn-primary btn-block" id="btnDoLogin">Se connecter</button>
+    <button type="button" class="link-btn" id="btnOpenSettingsFromLogin">⚙ Configuration (David)</button>
+  </div>
+</div>
+
+<!-- ===== REGLAGES (DAVID) ===== -->
+<div class="overlay" id="settingsOverlay">
+  <div class="box settings-box">
+    <h2>⚙ Configuration de la console</h2>
+
+    <label>Code d'accès de Lucas</label>
+    <input type="text" id="s_code" placeholder="Ex : LUCAS2026">
+
+    <h3>CRM Commercial (leads_commerciaux)</h3>
+    <label>Base Airtable</label><input type="text" id="s_com_base" placeholder="Base ID">
+    <label>Token</label><input type="text" id="s_com_token" placeholder="Personal Access Token">
+    <label>Table des leads</label><input type="text" id="s_com_table" placeholder="Leads">
+    <label>Table des messages</label><input type="text" id="s_com_msgtable" placeholder="Messages">
+    <label>Commerciaux (un par ligne : Nom | Région)</label>
+    <textarea id="s_com_commerciaux" placeholder="David GUENAUD | PRGO&#10;Raynald KOUASSI | PRGO&#10;Jérôme GOUSSOT | LMPM"></textarea>
+
+    <h3>CRM Réseau (leads_aerogommage)</h3>
+    <label>Base Airtable</label><input type="text" id="s_res_base" placeholder="Base ID">
+    <label>Token</label><input type="text" id="s_res_token" placeholder="Personal Access Token">
+    <p class="hint">Utilise les tables <code>Applicateurs</code> et <code>Leads</code> de cette base — comme dans leads_aerogommage.</p>
+    <p class="hint" style="color:var(--red);">⚠ Cette console ne vérifie pas les plafonds de carnet / règlements en attente (contrairement à leads_aerogommage). Pour les cas limites, passe par l'outil complet.</p>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn" id="btnCancelSettings">Annuler</button>
+      <button class="btn btn-primary" id="btnSaveSettings">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<main id="dashboard" style="display:none;">
+
+  <!-- MENU PRINCIPAL -->
+  <div class="card" id="menuView">
+    <p class="card-title">Que veux-tu faire ?</p>
+    <button class="btn btn-primary btn-block" data-open="viewContact" style="text-align:left;">🟦 Nouveau contact commercial</button>
+    <button class="btn btn-primary btn-block" data-open="viewReseau" style="text-align:left;margin-top:10px;background:var(--orange);border-color:var(--orange);">🟧 Nouveau lead réseau</button>
+    <button class="btn btn-red btn-block" data-open="viewMessage" style="text-align:left;margin-top:10px;">🔴 Message à David</button>
+  </div>
+
+  <!-- NOUVEAU CONTACT COMMERCIAL -->
+  <div class="card" id="viewContact" style="display:none;">
+    <button class="link-btn" data-back style="color:var(--accent);margin:0 0 10px;">← Retour</button>
+    <p class="card-title">🟦 Nouveau contact commercial</p>
+    <label>Nom de l'entreprise / interlocuteur</label>
+    <div class="row2">
+      <input type="text" id="c_entreprise" placeholder="Entreprise">
+      <input type="text" id="c_interlocuteur" placeholder="Interlocuteur">
+    </div>
+    <div class="row2">
+      <input type="text" id="c_tel" placeholder="Téléphone">
+      <input type="text" id="c_email" placeholder="Email">
+    </div>
+    <label>Adresse / commune</label>
+    <input type="text" id="c_adresse" placeholder="Ex : Chailland (53)">
+    <div class="row2">
+      <div>
+        <label>Région</label>
+        <select id="c_region"></select>
+      </div>
+      <div>
+        <label>Commercial</label>
+        <select id="c_commercial"></select>
+      </div>
+    </div>
+    <label>Notes</label>
+    <div class="notes-tools">
+      <button type="button" id="btnExpandCNotes">⤢ Agrandir</button>
+      <button type="button" id="btnInsertDateCNotes">🗓 Insérer date/heure</button>
+    </div>
+    <textarea id="c_notes" placeholder="Détails de la demande..."></textarea>
+    <button class="btn btn-primary btn-block" id="btnSaveContact">✓ Enregistrer le contact</button>
+    <div class="msg" id="c_msg"></div>
+  </div>
+
+  <!-- NOUVEAU LEAD RESEAU -->
+  <div class="card" id="viewReseau" style="display:none;">
+    <button class="link-btn" data-back style="color:var(--accent);margin:0 0 10px;">← Retour</button>
+    <p class="card-title">🟧 Nouveau lead réseau (candidature reçue par mail)</p>
+    <label>Applicateur</label>
+    <div class="combo">
+      <input type="text" id="r_app_search" placeholder="Rechercher un applicateur..." autocomplete="off">
+      <input type="hidden" id="r_app_id">
+      <div class="combo-list" id="r_app_list"></div>
+    </div>
+    <div class="row2">
+      <div>
+        <label>Prestation</label>
+        <select id="r_prest"></select>
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="date" id="r_date">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" id="btnSaveReseau">✓ Enregistrer le lead</button>
+    <div class="msg" id="r_msg"></div>
+  </div>
+
+  <!-- MESSAGE LIBRE -->
+  <div class="card" id="viewMessage" style="display:none;">
+    <button class="link-btn" data-back style="color:var(--accent);margin:0 0 10px;">← Retour</button>
+    <p class="card-title">🔴 Message à David</p>
+    <textarea id="m_texte" placeholder="Ex : Applicateur X à recontacter, client Y a rappelé..."></textarea>
+    <button class="btn btn-red btn-block" id="btnSendMsg">📩 Envoyer</button>
+    <div class="msg" id="m_msg"></div>
+  </div>
+
+  <!-- FIL DU JOUR -->
+  <div class="card">
+    <p class="card-title">📋 Ce que j'ai envoyé aujourd'hui</p>
+    <div id="feed"><p class="empty">Rien pour l'instant.</p></div>
+  </div>
+
+</main>
+
+<script>
+const PRESTS={SOL:'Sols',FAC:'Façades',BOI:'Bois',PIE:'Pierre',MOB:'Mobilier',VEH:'Véhicules',IND:'Industrie',GT:'Grands travaux',POU:'Poutres',ESC:'Escaliers',AUT:'Autre',VOL:'Volets',MUR:'Murs',GRI:'Grilles',BAT:'Bateaux',PLA:'Plafonds',POR:'Portails',LOC:'Locaux',TER:'Terrasses',CUI:'Cuisines',JAN:'Jantes',RAM:'Rampes',CHE:'Cheminées',CHA:'Charpentes',RAD:'Radiateurs',VEL:'Vélos'};
+const today = ()=> new Date().toISOString().split('T')[0];
+const $ = id => document.getElementById(id);
+
+function toggleExpandTextarea(id, btnEl){
+  const ta = $(id);
+  const isExpanded = ta.classList.toggle("expanded");
+  btnEl.textContent = isExpanded ? "⤡ Réduire" : "⤢ Agrandir";
+}
+function insertDateTime(id){
+  const ta = $(id);
+  const stamp = new Date().toLocaleString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
+  const insertion = `${stamp} — `;
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  const before = ta.value.slice(0, start);
+  const after = ta.value.slice(end);
+  const needsNewlineBefore = before.length > 0 && !before.endsWith("\n");
+  const prefix = needsNewlineBefore ? "\n" : "";
+  ta.value = before + prefix + insertion + after;
+  const cursorPos = (before + prefix + insertion).length;
+  ta.focus();
+  ta.setSelectionRange(cursorPos, cursorPos);
+}
+$("btnExpandCNotes").addEventListener("click", (e)=> toggleExpandTextarea("c_notes", e.currentTarget));
+$("btnInsertDateCNotes").addEventListener("click", ()=> insertDateTime("c_notes"));
+
+document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'});
+
+let cfg = JSON.parse(localStorage.getItem('consoleLucasConfig') || '{}');
+let logged = localStorage.getItem('consoleLucasLogged') === '1';
+let apps = []; // applicateurs réseau
+let feed = JSON.parse(localStorage.getItem('consoleLucasFeed') || '[]');
+
+function configured(){ return !!(cfg.code); }
+
+function parseCommerciaux(){
+  const raw = cfg.commerciaux || "";
+  return raw.split("\n").map(l=>l.split("|").map(s=>s.trim())).filter(p=>p[0]).map(p=>({name:p[0], region:p[1]||"PRGO"}));
+}
+
+function populateContactSelects(){
+  const commerciaux = parseCommerciaux();
+  const regions = [...new Set(commerciaux.map(c=>c.region))];
+  $("c_region").innerHTML = (regions.length?regions:["PRGO","LMPM"]).map(r=>`<option value="${r}">${r}</option>`).join("");
+  function updateCommercial(){
+    const region = $("c_region").value;
+    const opts = commerciaux.filter(c=>c.region===region);
+    $("c_commercial").innerHTML = opts.map(c=>`<option value="${c.name}">${c.name}</option>`).join("") || `<option value="">(aucun commercial configuré)</option>`;
+  }
+  $("c_region").addEventListener("change", updateCommercial);
+  updateCommercial();
+  $("r_prest").innerHTML = Object.entries(PRESTS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+  $("r_date").value = today();
+}
+
+/* ================= LOGIN / SETTINGS ================= */
+function showLogin(){ $("loginOverlay").classList.add("open"); }
+function hideLogin(){ $("loginOverlay").classList.remove("open"); }
+function showDashboard(){
+  $("dashboard").style.display = "block";
+  $("btnLogout").style.display = "inline-flex";
+  $("btnSettings").style.display = "none";
+  populateContactSelects();
+  renderFeed();
+  loadApplicateurs();
+  goToMenu();
+}
+function goToMenu(){
+  ["menuView","viewContact","viewReseau","viewMessage"].forEach(id=> $(id).style.display = "none");
+  $("menuView").style.display = "block";
+}
+document.querySelectorAll("[data-open]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    ["menuView","viewContact","viewReseau","viewMessage"].forEach(id=> $(id).style.display = "none");
+    $(btn.dataset.open).style.display = "block";
+  });
+});
+document.querySelectorAll("[data-back]").forEach(btn=> btn.addEventListener("click", goToMenu));
+function hideDashboard(){
+  $("dashboard").style.display = "none";
+  $("btnLogout").style.display = "none";
+  $("btnSettings").style.display = "inline-flex";
+}
+function boot(){
+  if(!configured()){ showLogin(); hideDashboard(); return; }
+  if(logged){ hideLogin(); showDashboard(); }
+  else { showLogin(); hideDashboard(); }
+}
+$("btnDoLogin").addEventListener("click", ()=>{
+  const code = $("loginCode").value.trim();
+  if(code && cfg.code && code === cfg.code){
+    logged = true;
+    localStorage.setItem("consoleLucasLogged","1");
+    $("loginError").style.display = "none";
+    $("loginCode").value = "";
+    hideLogin();
+    showDashboard();
+  } else {
+    $("loginError").style.display = "block";
+  }
+});
+$("loginCode").addEventListener("keydown", e=>{ if(e.key==="Enter") $("btnDoLogin").click(); });
+$("btnLogout").addEventListener("click", ()=>{
+  logged = false;
+  localStorage.removeItem("consoleLucasLogged");
+  hideDashboard();
+  showLogin();
+});
+function openSettings(){
+  $("s_code").value = cfg.code || "";
+  $("s_com_base").value = cfg.comBase || "";
+  $("s_com_token").value = cfg.comToken || "";
+  $("s_com_table").value = cfg.comTable || "Leads";
+  $("s_com_msgtable").value = cfg.comMsgTable || "Messages";
+  $("s_com_commerciaux").value = cfg.commerciaux || "David GUENAUD | PRGO\nRaynald KOUASSI | PRGO\nJérôme GOUSSOT | LMPM";
+  $("s_res_base").value = cfg.resBase || "";
+  $("s_res_token").value = cfg.resToken || "";
+  $("settingsOverlay").classList.add("open");
+}
+$("btnSettings").addEventListener("click", openSettings);
+$("btnOpenSettingsFromLogin").addEventListener("click", openSettings);
+$("btnCancelSettings").addEventListener("click", ()=> $("settingsOverlay").classList.remove("open"));
+$("btnSaveSettings").addEventListener("click", ()=>{
+  cfg = {
+    code: $("s_code").value.trim(),
+    comBase: $("s_com_base").value.trim(),
+    comToken: $("s_com_token").value.trim(),
+    comTable: $("s_com_table").value.trim() || "Leads",
+    comMsgTable: $("s_com_msgtable").value.trim() || "Messages",
+    commerciaux: $("s_com_commerciaux").value,
+    resBase: $("s_res_base").value.trim(),
+    resToken: $("s_res_token").value.trim()
+  };
+  localStorage.setItem("consoleLucasConfig", JSON.stringify(cfg));
+  $("settingsOverlay").classList.remove("open");
+  boot();
+});
+
+/* ================= FIL DU JOUR ================= */
+function pushFeed(text){
+  feed.unshift({ text, time: new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}), date: today() });
+  feed = feed.filter(f=>f.date===today()).slice(0,30);
+  localStorage.setItem("consoleLucasFeed", JSON.stringify(feed));
+  renderFeed();
+}
+function renderFeed(){
+  const todays = feed.filter(f=>f.date===today());
+  $("feed").innerHTML = todays.length
+    ? todays.map(f=>`<div class="feed-item">${f.text}<div class="feed-time">${f.time}</div></div>`).join("")
+    : `<p class="empty">Rien pour l'instant.</p>`;
+}
+
+/* ================= NOUVEAU CONTACT COMMERCIAL ================= */
+$("btnSaveContact").addEventListener("click", async ()=>{
+  const msgEl = $("c_msg");
+  const entreprise = $("c_entreprise").value.trim();
+  const interlocuteur = $("c_interlocuteur").value.trim();
+  if(!entreprise && !interlocuteur){ msgEl.textContent = "Renseignez au moins l'entreprise ou l'interlocuteur"; msgEl.className="msg err"; return; }
+  if(!cfg.comBase || !cfg.comToken){ msgEl.textContent = "Configuration CRM Commercial manquante"; msgEl.className="msg err"; return; }
+  const fields = {
+    Entreprise: entreprise, Interlocuteur: interlocuteur,
+    Telephone: $("c_tel").value.trim(), Email: $("c_email").value.trim(),
+    Adresse: $("c_adresse").value.trim(),
+    Region: $("c_region").value, Commercial: $("c_commercial").value,
+    Statut: "Contact à prendre",
+    ProchaineRelance: today(), CreneauRelance: "Début de matinée",
+    SaisiParLucas: true,
+    Notes: $("c_notes").value.trim()
+  };
+  msgEl.textContent = "Enregistrement..."; msgEl.className="msg";
+  try{
+    const res = await fetch(`https://api.airtable.com/v0/${cfg.comBase}/${encodeURIComponent(cfg.comTable||"Leads")}`, {
+      method:"POST",
+      headers:{ Authorization:`Bearer ${cfg.comToken}`, "Content-Type":"application/json" },
+      body: JSON.stringify({ fields, typecast:true })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    msgEl.textContent = "✓ Contact enregistré"; msgEl.className="msg ok";
+    pushFeed(`🟦 Contact commercial : <strong>${entreprise||interlocuteur}</strong>`);
+    ["c_entreprise","c_interlocuteur","c_tel","c_email","c_adresse","c_notes"].forEach(id=> $(id).value = "");
+    setTimeout(goToMenu, 1200);
+  }catch(e){
+    console.error(e);
+    msgEl.textContent = "Échec de l'enregistrement"; msgEl.className="msg err";
+  }
+});
+
+/* ================= NOUVEAU LEAD RESEAU ================= */
+async function loadApplicateurs(){
+  if(!cfg.resBase || !cfg.resToken) return;
+  try{
+    let records = []; let offset = null;
+    do{
+      const url = `https://api.airtable.com/v0/${cfg.resBase}/Applicateurs?pageSize=100${offset?`&offset=${offset}`:""}`;
+      const res = await fetch(url, { headers:{ Authorization:`Bearer ${cfg.resToken}` } });
+      if(!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      records = records.concat(data.records||[]);
+      offset = data.offset;
+    } while(offset);
+    apps = records.map(r=>({id:r.id, ...r.fields})).filter(a=>a.cat!=="stop").sort((a,b)=>(a.nom||"").localeCompare(b.nom||"","fr"));
+  }catch(e){ console.error("Erreur chargement applicateurs", e); }
+}
+function renderAppCombo(filter){
+  const f = (filter||"").toLowerCase();
+  const list = apps.filter(a=>(a.nom||"").toLowerCase().includes(f)).slice(0,30);
+  $("r_app_list").innerHTML = list.map(a=>`<div class="combo-item" data-id="${a.id}" data-nom="${a.nom}">${a.nom}</div>`).join("") || `<div class="combo-item" style="color:var(--muted);font-style:italic;">Aucun résultat</div>`;
+  $("r_app_list").classList.add("open");
+  $("r_app_list").querySelectorAll(".combo-item[data-id]").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      $("r_app_search").value = el.dataset.nom;
+      $("r_app_id").value = el.dataset.id;
+      $("r_app_list").classList.remove("open");
+    });
+  });
+}
+$("r_app_search").addEventListener("focus", ()=> renderAppCombo($("r_app_search").value));
+$("r_app_search").addEventListener("input", ()=>{ $("r_app_id").value=""; renderAppCombo($("r_app_search").value); });
+document.addEventListener("click", e=>{
+  if(!e.target.closest(".combo")) $("r_app_list").classList.remove("open");
+});
+
+$("btnSaveReseau").addEventListener("click", async ()=>{
+  const msgEl = $("r_msg");
+  const appId = $("r_app_id").value;
+  const prestation = $("r_prest").value;
+  const date = $("r_date").value;
+  if(!appId || !prestation || !date){ msgEl.textContent = "Tous les champs sont requis (sélectionnez l'applicateur dans la liste)"; msgEl.className="msg err"; return; }
+  if(!cfg.resBase || !cfg.resToken){ msgEl.textContent = "Configuration CRM Réseau manquante"; msgEl.className="msg err"; return; }
+  msgEl.textContent = "Enregistrement..."; msgEl.className="msg";
+  try{
+    const res = await fetch(`https://api.airtable.com/v0/${cfg.resBase}/Leads`, {
+      method:"POST",
+      headers:{ Authorization:`Bearer ${cfg.resToken}`, "Content-Type":"application/json" },
+      body: JSON.stringify({ fields:{ applicateur:appId, prestation, date }, typecast:true })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const appNom = $("r_app_search").value;
+    msgEl.textContent = "✓ Lead enregistré"; msgEl.className="msg ok";
+    pushFeed(`🟧 Lead réseau : <strong>${appNom}</strong> — ${PRESTS[prestation]||prestation}`);
+    $("r_app_search").value=""; $("r_app_id").value=""; $("r_date").value = today();
+    setTimeout(goToMenu, 1200);
+  }catch(e){
+    console.error(e);
+    msgEl.textContent = "Échec de l'enregistrement — plafond de carnet atteint ou règlement en attente ? Passez par l'outil complet."; msgEl.className="msg err";
+  }
+});
+
+/* ================= MESSAGE LIBRE ================= */
+$("btnSendMsg").addEventListener("click", async ()=>{
+  const msgEl = $("m_msg");
+  const texte = $("m_texte").value.trim();
+  if(!texte){ msgEl.textContent = "Écrivez un message avant d'envoyer"; msgEl.className="msg err"; return; }
+  if(!cfg.comBase || !cfg.comToken){ msgEl.textContent = "Configuration manquante"; msgEl.className="msg err"; return; }
+  msgEl.textContent = "Envoi..."; msgEl.className="msg";
+  try{
+    const res = await fetch(`https://api.airtable.com/v0/${cfg.comBase}/${encodeURIComponent(cfg.comMsgTable||"Messages")}`, {
+      method:"POST",
+      headers:{ Authorization:`Bearer ${cfg.comToken}`, "Content-Type":"application/json" },
+      body: JSON.stringify({ fields:{ Auteur:"Lucas", Texte:texte, Statut:"A traiter", ProchaineRelance: today() }, typecast:true })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    msgEl.textContent = "✓ Message envoyé à David"; msgEl.className="msg ok";
+    pushFeed(`🔴 Message envoyé à David`);
+    $("m_texte").value = "";
+    setTimeout(goToMenu, 1200);
+  }catch(e){
+    console.error(e);
+    msgEl.textContent = "Échec de l'envoi"; msgEl.className="msg err";
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
